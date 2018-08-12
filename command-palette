@@ -1,0 +1,229 @@
+# args
+action=$1;
+
+if [[ -z $action ]]; then
+    action="echo";
+fi
+
+# TODO: add config file for these
+# styles
+normal=$(tput sgr0);    # wraps unselected options
+selected=$(tput rev);   #   "   selected     "
+
+# templates
+prefix="   ";           # shown before unselected options
+suffix="   ";           #   "   after      "        "
+prefixSelected=" * ";   #   "   before selected     "
+suffixSelected="   ";   #   "   after      "        "
+searchPrefix=" | ";     #   "   before the filter
+searchSuffix="   ";     #   "   after   "    "
+truncateEllipsis="..."; #   "     "   truncated text
+# 
+
+# vars
+escape="";
+modifier="";
+isPageKey="";
+filter="";
+IFS=$'\n' data=($2);
+filteredData=("${data[@]}");
+index=0;
+cols=$(tput cols);
+lines=$(tput lines);
+
+function _filterData {
+    filterGlob="";
+    filteredData=();
+
+    for i in $(seq 0 ${#filter}); do
+        filterGlob="${filterGlob}${filter:$i:1}*";
+    done
+
+    for item in "${data[@]}"; do
+        if [[ $item = *$filterGlob ]]; then
+            filteredData+=($item);
+        fi
+    done
+
+    if [[ $index -gt $((${#filteredData[@]}-1)) ]]; then
+        index=$((${#filteredData[@]}-1));
+
+        if [[ $index -lt 0 ]]; then
+            index=0;
+        fi
+    fi
+
+    # TODO: sort data ascending by length of match
+};
+
+function _updateDisplay {
+    cols=$(tput cols);
+    lines=$(tput lines);
+
+    dataToRender=(${filteredData[@]});
+    maxLines=$((lines-3));
+
+    if [[ "${#dataToRender[@]}" -gt $maxLines ]]; then
+        startIndex=$((index-(maxLines/2)-1));
+
+        if [[ $startIndex -lt 0 ]]; then
+            startIndex=0;
+        fi
+
+        endIndex=$((startIndex+maxLines-1));
+
+        if [[ $endIndex -gt ${#filteredData[@]} ]]; then
+            endIndex=$((${#filteredData[@]}-1));
+        fi
+
+        dataToRender=();
+
+        for i in $(seq $startIndex $endIndex); do
+            dataToRender[$i]=${filteredData[$i]};
+        done
+    fi
+
+    echo -n $(tput clear);
+    echo -n $(tput cup 0 0);
+
+    echo "${searchPrefix}${filter}${searchSuffix}";
+
+    for i in "${!dataToRender[@]}"; do 
+        displayLine="${filteredData[$i]}";
+        maxLength=$cols;
+
+        if [[ $i = $index ]]; then
+            maxLength=$((maxLength-${#prefixSelected}-${#suffixSelected}-${#truncateEllipsis}));
+        else
+            maxLength=$((maxLength-${#prefix}-${#suffix}-${#truncateEllipsis}));
+        fi
+
+        if [[ ${#displayLine} -gt $maxLength ]]; then
+            displayLine="${displayLine:0:$maxLength}${truncateEllipsis}";
+        fi
+
+        if [[ $i = $index ]]; then
+            echo "${selected}${prefixSelected}${displayLine}${suffixSelected}${normal}";
+        else
+            echo "${normal}${prefix}${displayLine}${suffix}${normal}";
+        fi
+    done
+};
+
+function _setModifiers {
+    escape=$1;
+    modifier=$2;
+    isPageKey=$3;
+};
+
+function cleanup {
+    echo -n $(tput rmcup);
+    echo -n $(tput cnorm);
+};
+
+# main
+echo -n $(tput smcup);
+echo -n $(tput civis);
+trap cleanup EXIT;
+
+_updateDisplay;
+
+while read -s -n1 key; do
+    # TODO
+    # left/right +/- screen width / 2
+
+    case $key in
+        $'\e')
+            if [[ $escape = "1" ]]; then
+                exit;
+            fi
+            _setModifiers 1;
+            ;;
+        '[')
+            if [[ $escape = "1" ]]; then
+                _setModifiers 1 1;
+            else
+                _setModifiers;
+            fi
+            ;;
+        A)
+            if [[ $escape = "1" && $modifier = "1" ]]; then
+                index=$((index-(index>0)));
+            fi
+
+            _setModifiers;
+            _updateDisplay;
+            ;;
+        B)
+            if [[ $escape = "1" && $modifier = "1" ]]; then
+                index=$((index+(index<(${#filteredData[@]}-1))));
+            fi
+
+            _setModifiers;
+            _updateDisplay;
+            ;;
+        C)
+            # right
+            ;;
+        D)
+            # left
+            ;;
+        5)
+            if [[ $escape = "1" && $modifier = "1" ]]; then
+                _setModifiers 1 1 "up";
+            else
+                _setModifiers;
+                _updateDisplay;
+            fi
+            ;;
+        6)
+            if [[ $escape = "1" && $modifier = "1" ]]; then
+                _setModifiers 1 1 "down";
+            else
+                _setModifiers;
+                _updateDisplay;
+            fi
+            ;;
+        "~")
+            if [[ $escape = "1" && $modifier = "1" ]]; then
+                if [[ $isPageKey = up ]]; then
+                    index=$((index-(lines/2)));
+
+                    if [[ index -lt 0 ]]; then
+                        index=0;
+                    fi
+                elif [[ $isPageKey = down ]]; then
+                    index=$((index+(lines/2)));
+
+                    if [[ index -gt $((${#filteredData[@]}-1)) ]]; then
+                        index=$((${#filteredData[@]}-1));
+                    fi
+                fi
+            fi
+
+            _setModifiers;
+            _updateDisplay;
+            ;;
+        "")
+            cleanup;
+            $action "${filteredData[$index]}";
+            exit;
+            ;;
+        $'\177')
+            filter="${filter%?}";
+            _filterData;
+
+            _setModifiers;
+            _updateDisplay;
+            ;;
+        *)
+            if [[ $escape = "" && $modifier = "" ]]; then
+                filter="$filter$key";
+                _filterData;
+            fi
+
+            _setModifiers;
+            _updateDisplay;
+            ;;
+    esac;
+done;
