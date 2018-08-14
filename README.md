@@ -1,6 +1,8 @@
 # bash-basic-command-palette
 A command palette that works from bash 3.2 using only builtins and tput
 
+[![asciicast](https://asciinema.org/a/196375.png)](https://asciinema.org/a/196375)
+
 ---
 
 I've seen a couple of other command palettes that looked really good and very full featured, but these either didn't work on older bash, or needed some other dependencies, which, when working on someone elses servers, aren't always possible to install.
