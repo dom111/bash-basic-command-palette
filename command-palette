@@ -117,13 +117,13 @@ function _setModifiers {
 };
 
 function cleanup {
-    echo -n $(tput rmcup);
-    echo -n $(tput cnorm);
+    tput rmcup;
+    tput cnorm;
 };
 
 # main
-echo -n $(tput smcup);
-echo -n $(tput civis);
+tput smcup;
+tput civis;
 trap cleanup EXIT;
 
 _updateDisplay;
@@ -205,6 +205,7 @@ while read -s -n1 key; do
             _updateDisplay;
             ;;
         "")
+            trap - EXIT;
             cleanup;
             $action "${filteredData[$index]}";
             exit;
