@@ -121,6 +121,16 @@ function cleanup {
     tput cnorm;
 };
 
+function _updateFilter {
+    if [[ $1 = $'\177' ]]; then
+        filter="${filter%?}";
+    else
+        filter="$filter$1";
+    fi
+
+    _filterData;
+};
+
 # main
 tput smcup;
 tput civis;
@@ -137,18 +147,22 @@ while read -s -n1 key; do
             if [[ $escape = "1" ]]; then
                 exit;
             fi
+
             _setModifiers 1;
             ;;
         '[')
             if [[ $escape = "1" ]]; then
                 _setModifiers 1 1;
             else
+                _updateFilter $key;
                 _setModifiers;
             fi
             ;;
         A)
             if [[ $escape = "1" && $modifier = "1" ]]; then
                 index=$((index-(index>0)));
+            else
+                _updateFilter $key;
             fi
 
             _setModifiers;
@@ -157,21 +171,18 @@ while read -s -n1 key; do
         B)
             if [[ $escape = "1" && $modifier = "1" ]]; then
                 index=$((index+(index<(${#filteredData[@]}-1))));
+            else
+                _updateFilter $key;
             fi
 
             _setModifiers;
             _updateDisplay;
             ;;
-        C)
-            # right
-            ;;
-        D)
-            # left
-            ;;
         5)
             if [[ $escape = "1" && $modifier = "1" ]]; then
                 _setModifiers 1 1 "up";
             else
+                _updateFilter $key;
                 _setModifiers;
                 _updateDisplay;
             fi
@@ -180,6 +191,7 @@ while read -s -n1 key; do
             if [[ $escape = "1" && $modifier = "1" ]]; then
                 _setModifiers 1 1 "down";
             else
+                _updateFilter $key;
                 _setModifiers;
                 _updateDisplay;
             fi
@@ -199,6 +211,8 @@ while read -s -n1 key; do
                         index=$((${#filteredData[@]}-1));
                     fi
                 fi
+            else
+                _updateFilter $key;
             fi
 
             _setModifiers;
@@ -210,19 +224,8 @@ while read -s -n1 key; do
             $action "${filteredData[$index]}";
             exit;
             ;;
-        $'\177')
-            filter="${filter%?}";
-            _filterData;
-
-            _setModifiers;
-            _updateDisplay;
-            ;;
         *)
-            if [[ $escape = "" && $modifier = "" ]]; then
-                filter="$filter$key";
-                _filterData;
-            fi
-
+            _updateFilter $key;
             _setModifiers;
             _updateDisplay;
             ;;
