@@ -1,9 +1,4 @@
 # args
-action=$1;
-
-if [[ -z $action ]]; then
-    action="echo";
-fi
 
 # TODO: add config file for these
 # styles
@@ -20,16 +15,56 @@ searchSuffix="   ";     #   "   after   "    "
 truncateEllipsis="..."; #   "     "   truncated text
 # 
 
+# args
+keepOpen=0;             # close the list when $action is called
+action=echo;            # action to run when enter is pressed on list
+args=();
+# 
+
+function usage {
+    echo "usage: command-palette [-k] [<action>] "\""<list items>"\" >&2;
+    echo "  -k      Keep command-palette open after running <action>" >&2;
+    exit 1;
+};
+
+for arg in "$@"; do
+    if [[ $arg = -* ]]; then
+        case $arg in
+            -k)
+                keepOpen=1;
+                ;;
+            -h|--help)
+                usage;
+                exit;
+                ;;
+            *)
+                args+=("$arg");
+                ;;
+        esac
+    else
+        args+=("$arg");
+    fi
+done
+
+# if we have multiple arguments, assume that the first is the action
+if [[ "${#args[@]}" -gt 1 ]]; then
+    action="${args[0]}";
+    unset args[0];
+fi
+
 # vars
 escape="";
 modifier="";
 isPageKey="";
 filter="";
-IFS=$'\n' data=($2);
+data=();
+
+for arg in "${args[@]}"; do
+    IFS=$'\n' data+=($arg);
+done
+
 filteredData=("${data[@]}");
 index=0;
-cols=$(tput cols);
-lines=$(tput lines);
 
 function _filterData {
     filterGlob="";
@@ -83,8 +118,8 @@ function _updateDisplay {
         done
     fi
 
-    echo -n $(tput clear);
-    echo -n $(tput cup 0 0);
+    tput clear;
+    tput cup 0 0;
 
     echo "${searchPrefix}${filter}${searchSuffix}";
 
@@ -201,13 +236,13 @@ while read -s -n1 key; do
                 if [[ $isPageKey = up ]]; then
                     index=$((index-(lines/2)));
 
-                    if [[ index -lt 0 ]]; then
+                    if [[ $index -lt 0 ]]; then
                         index=0;
                     fi
                 elif [[ $isPageKey = down ]]; then
                     index=$((index+(lines/2)));
 
-                    if [[ index -gt $((${#filteredData[@]}-1)) ]]; then
+                    if [[ $index -gt $((${#filteredData[@]}-1)) ]]; then
                         index=$((${#filteredData[@]}-1));
                     fi
                 fi
@@ -219,10 +254,26 @@ while read -s -n1 key; do
             _updateDisplay;
             ;;
         "")
-            trap - EXIT;
-            cleanup;
-            $action "${filteredData[$index]}";
-            exit;
+            if [[ $keepOpen = 0 ]]; then
+                trap - EXIT;
+                cleanup;
+                $action "${filteredData[$index]}";
+                exit;
+            else
+                $action "${filteredData[$index]}";
+                _updateDisplay;
+            fi
+            ;;
+        $'\177')
+            if [[ $escape = "1" ]]; then
+                filter="";
+                _filterData;
+            else
+                _updateFilter $key;
+            fi
+
+            _setModifiers;
+            _updateDisplay;
             ;;
         *)
             _updateFilter $key;

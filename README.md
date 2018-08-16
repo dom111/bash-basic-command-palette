@@ -1,5 +1,5 @@
 # bash-basic-command-palette
-A command palette that works from bash 3.2 using only builtins and tput
+A command palette that works from bash 3.2 using only builtins, `tput` and `seq`
 
 [![asciicast](https://asciinema.org/a/196375.png)](https://asciinema.org/a/196375)
 
@@ -15,17 +15,40 @@ There are a few options that can be configured at the top of the script, but I d
 
 ## Usage
 
-    command-palette "<action>" "<newline separated list of options>"
+    command-palette <action> <list option> [<list option>, ...]
+    command-palette "<list options separated by newlines>"
 
 So something like:
 
-    command-palette "eval" "$(history | tail | perl -pe '$_=substr$_,7')"
+    command-palette eval "$(history | tail | cut -c8-)"
 
 would give you an excerpt of your history that is easily searchable.
+
+If you provide a string that contains newlines, that item will be split on newlines into individual options, you can also just supply a list of arguments. To preserve spaces in items, use quotes, or escape them:
+
+    command-palette echo Item 1 "Item 2" Item\ three 'Item 4'
+
+produces:
+
+     |    
+     * Item   
+       1   
+       Item 2   
+       Item three   
+       Item 4   
+
+The default `<action>` is to call `echo`.
+
+## Command-line Options
+
+- `-k` - *k*eeps the command palette open after executing `<action>`.
+
+## Keyboard Shortcuts
+
+When in the command-palette interface, <kbd>Esc</kbd> <kbd>BkSp</kbd> will clear the filter, and you can use <kbd>Esc</kbd> <kbd>Esc</kbd> to quit without executing `<action>`.
 
 ## TODO
 
 - Sorting
 - Add a config file
-- Default action
 - Add left/right support for long lines
