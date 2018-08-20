@@ -1,5 +1,5 @@
 # bash-basic-command-palette
-A command palette that works from bash 3.2 using only builtins, `tput` and `seq`
+A command palette that works from bash 3.2 using only builtins and `tput`
 
 [![asciicast](https://asciinema.org/a/196375.png)](https://asciinema.org/a/196375)
 
@@ -45,7 +45,7 @@ The default `<action>` is to call `echo`.
 
 ## Keyboard Shortcuts
 
-When in the command-palette interface, <kbd>Esc</kbd> <kbd>BkSp</kbd> will clear the filter, and you can use <kbd>Esc</kbd> <kbd>Esc</kbd> to quit without executing `<action>`.
+When in the command-palette interface, <kbd>Esc</kbd> <kbd>BkSp</kbd> will clear the filter, and you can use <kbd>Esc</kbd> <kbd>Esc</kbd> to quit without executing `<action>`. When navigating the list, the <kbd>↑</kbd> and <kbd>↓</kbd> arrows move up and down the list, <kbd>PgUp</kbd> and <kbd>PgDn</kbd> move up or down half a screen of items, and <kbd>Home</kbd> and <kbd>End</kbd> move to the beginning and end of the list respectively.
 
 ## TODO
 

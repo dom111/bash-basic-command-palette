@@ -56,6 +56,7 @@ fi
 escape="";
 modifier="";
 isPageKey="";
+isHomeEnd="";
 filter="";
 data=();
 
@@ -69,9 +70,10 @@ index=0;
 function _filterData {
     filterGlob="";
     filteredData=();
+    i=0;
 
-    for i in $(seq 0 ${#filter}); do
-        filterGlob="${filterGlob}${filter:$i:1}*";
+    while [[ $i -le ${#filter} ]]; do
+        filterGlob="${filterGlob}${filter:$((i++)):1}*";
     done
 
     for item in "${data[@]}"; do
@@ -112,9 +114,11 @@ function _updateDisplay {
         fi
 
         dataToRender=();
+        i=$startIndex;
 
-        for i in $(seq $startIndex $endIndex); do
+        while [[ $i -le $endIndex ]]; do
             dataToRender[$i]=${filteredData[$i]};
+            i=$((i+1));
         done
     fi
 
@@ -149,6 +153,7 @@ function _setModifiers {
     escape=$1;
     modifier=$2;
     isPageKey=$3;
+    isHomeEnd=$4;
 };
 
 function cleanup {
@@ -212,6 +217,36 @@ while read -s -n1 key; do
 
             _setModifiers;
             _updateDisplay;
+            ;;
+        F)
+            if [[ $escape = "1" && $isHomeEnd = "1" ]]; then
+                index=$((${#filteredData[@]}-1));
+            else
+                _updateFilter $key;
+            fi
+
+            _setModifiers;
+            _updateDisplay;
+            ;;
+        H)
+            if [[ $escape = "1" && $isHomeEnd = "1" ]]; then
+                index=0;
+            else
+                _updateFilter $key;
+            fi
+
+            _setModifiers;
+            _updateDisplay;
+            ;;
+        O)
+            if [[ $escape = "1" ]]; then
+                _setModifiers 1 "" "" 1;
+            else
+                _updateFilter $key;
+                _setModifiers;
+                _updateDisplay;
+            fi
+
             ;;
         5)
             if [[ $escape = "1" && $modifier = "1" ]]; then
