@@ -48,7 +48,7 @@ done
 
 # if we have multiple arguments, assume that the first is the action
 if [[ "${#args[@]}" -gt 1 ]]; then
-    action="${args[0]}";
+    action=(${args[0]}); # use an array to support commands with spaces like 'git checkout'
     unset args[0];
 fi
 
@@ -248,6 +248,24 @@ while read -s -n1 key; do
             fi
 
             ;;
+        1)
+            if [[ $escape = "1" && $modifier = "1" ]]; then
+                _setModifiers 1 1 "home";
+            else
+                _updateFilter $key;
+                _setModifiers;
+                _updateDisplay;
+            fi
+            ;;
+        4)
+            if [[ $escape = "1" && $modifier = "1" ]]; then
+                _setModifiers 1 1 "end";
+            else
+                _updateFilter $key;
+                _setModifiers;
+                _updateDisplay;
+            fi
+            ;;
         5)
             if [[ $escape = "1" && $modifier = "1" ]]; then
                 _setModifiers 1 1 "up";
@@ -280,6 +298,10 @@ while read -s -n1 key; do
                     if [[ $index -gt $((${#filteredData[@]}-1)) ]]; then
                         index=$((${#filteredData[@]}-1));
                     fi
+                elif [[ $isPageKey = home ]]; then
+                    index=0;
+                elif [[ $isPageKey = end ]]; then
+                    index=$((${#filteredData[@]}-1));
                 fi
             else
                 _updateFilter $key;
@@ -292,10 +314,10 @@ while read -s -n1 key; do
             if [[ $keepOpen = 0 ]]; then
                 trap - EXIT;
                 cleanup;
-                $action "${filteredData[$index]}";
+                ${action[@]} "${filteredData[$index]}";
                 exit;
             else
-                $action "${filteredData[$index]}";
+                ${action[@]} "${filteredData[$index]}";
                 _updateDisplay;
             fi
             ;;
