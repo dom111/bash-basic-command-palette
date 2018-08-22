@@ -76,6 +76,8 @@ function _filterData {
         filterGlob="${filterGlob}${filter:$((i++)):1}*";
     done
 
+    shopt -s nocasematch;
+
     for item in "${data[@]}"; do
         if [[ $item = *$filterGlob ]]; then
             filteredData+=($item);
