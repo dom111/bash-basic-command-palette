@@ -201,44 +201,84 @@ while read -s -n1 key; do
             fi
             ;;
         A)
+            updates="";
+
             if [[ $escape = "1" && $modifier = "1" ]]; then
-                index=$((index-(index>0)));
+                if [[ $index -gt 0 ]]; then
+                    index=$((index-1));
+                    updates=1;
+                else
+                    _setModifiers;
+                fi
             else
                 _updateFilter $key;
+                updates=1;
             fi
 
-            _setModifiers;
-            _updateDisplay;
+            if [[ $updates = 1 ]]; then
+                _setModifiers;
+                _updateDisplay;
+            fi
             ;;
         B)
+            updates="";
+
             if [[ $escape = "1" && $modifier = "1" ]]; then
-                index=$((index+(index<(${#filteredData[@]}-1))));
+                if [[ $index -lt $((${#filteredData[@]}-1)) ]]; then
+                    index=$((index+(index<(${#filteredData[@]}-1))));
+                    updates=1;
+                else
+                    _setModifiers;
+                fi
             else
                 _updateFilter $key;
+                updates=1;
             fi
 
-            _setModifiers;
-            _updateDisplay;
+            if [[ $updates = 1 ]]; then
+                _setModifiers;
+                _updateDisplay;
+            fi
             ;;
         F)
+            updates="";
+
             if [[ $escape = "1" && $isHomeEnd = "1" ]]; then
-                index=$((${#filteredData[@]}-1));
+                if [[ $index -lt $((${#filteredData[@]}-1)) ]]; then
+                    index=$((${#filteredData[@]}-1));
+                    updates=1;
+                else
+                    _setModifiers;
+                fi
             else
                 _updateFilter $key;
+                updates=1;
             fi
 
-            _setModifiers;
-            _updateDisplay;
+            if [[ $updates = 1 ]]; then
+                _setModifiers;
+                _updateDisplay;
+            fi
             ;;
         H)
+            updates="";
+
             if [[ $escape = "1" && $isHomeEnd = "1" ]]; then
-                index=0;
+                if [[ $index -gt 0 ]]; then
+                    index=0;
+                    updates=1;
+                else
+                    _setModifiers;
+                fi
             else
                 _updateFilter $key;
+                updates=1;
             fi
 
-            _setModifiers;
-            _updateDisplay;
+            if [[ $updates = 1 ]]; then
+                _setModifiers;
+                _updateDisplay;
+            fi
             ;;
         O)
             if [[ $escape = "1" ]]; then
@@ -287,30 +327,55 @@ while read -s -n1 key; do
             fi
             ;;
         "~")
+            updates="";
+
             if [[ $escape = "1" && $modifier = "1" ]]; then
                 if [[ $isPageKey = up ]]; then
-                    index=$((index-(lines/2)));
+                    if [[ $index -gt 0 ]]; then
+                        index=$((index-(lines/2)));
+                        updates=1;
 
-                    if [[ $index -lt 0 ]]; then
-                        index=0;
+                        if [[ $index -lt 0 ]]; then
+                            index=0;
+                        fi
+                    else
+                        _setModifiers;
                     fi
                 elif [[ $isPageKey = down ]]; then
-                    index=$((index+(lines/2)));
+                    if [[ $index -lt $((${#filteredData[@]}-1)) ]]; then
+                        index=$((index+(lines/2)));
+                        updates=1;
 
-                    if [[ $index -gt $((${#filteredData[@]}-1)) ]]; then
-                        index=$((${#filteredData[@]}-1));
+                        if [[ $index -gt $((${#filteredData[@]}-1)) ]]; then
+                            index=$((${#filteredData[@]}-1));
+                        fi
+                    else
+                        _setModifiers;
                     fi
                 elif [[ $isPageKey = home ]]; then
-                    index=0;
+                    if [[ $index -gt 0 ]]; then
+                        index=0;
+                        updates=1;
+                    else
+                        _setModifiers;
+                    fi
                 elif [[ $isPageKey = end ]]; then
-                    index=$((${#filteredData[@]}-1));
+                    if [[ $index -lt $((${#filteredData[@]}-1)) ]]; then
+                        index=$((${#filteredData[@]}-1));
+                        updates=1;
+                    else
+                        _setModifiers;
+                    fi
                 fi
             else
                 _updateFilter $key;
+                updates=1;
             fi
 
-            _setModifiers;
-            _updateDisplay;
+            if [[ $updates = 1 ]]; then
+                _setModifiers;
+                _updateDisplay;
+            fi
             ;;
         "")
             if [[ $keepOpen = 0 ]]; then
