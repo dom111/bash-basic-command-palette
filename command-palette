@@ -187,7 +187,7 @@ while read -s -n1 key; do
     case $key in
         $'\e')
             if [[ $escape = "1" ]]; then
-                exit;
+                exit 1;
             fi
 
             _setModifiers 1;
