@@ -49,6 +49,12 @@ When in the command-palette interface, <kbd>Esc</kbd> <kbd>BkSp</kbd> will clear
 
 ## TODO
 
-- Sorting
-- Add a config file
-- Add left/right support for long lines
+- [x] Default action
+- [x] Option to prefill the filter
+- [x] Add an optional title
+- [ ] Sorting
+- [ ] Add a config file
+- [ ] Add left/right support for long lines
+- [ ] Intelligent screen repainting
+- [ ] Multi-select
+- [ ] Accept a pipe (need to differentiate pipe input and subsequent key input via `read`...)

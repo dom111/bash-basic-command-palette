@@ -1,4 +1,4 @@
-# args
+#!/usr/bin/env bash
 
 # TODO: add config file for these
 # styles
@@ -16,26 +16,60 @@ truncateEllipsis="..."; #   "     "   truncated text
 # 
 
 # args
+title="";               # opional title shown on the first line
 keepOpen=0;             # close the list when $action is called
-action=echo;            # action to run when enter is pressed on list
+action="";              # action to run when enter is pressed on list
+filter="";
 args=();
 # 
 
 function usage {
-    echo "usage: command-palette [-k] [<action>] "\""<list items>"\" >&2;
-    echo "  -k      Keep command-palette open after running <action>" >&2;
+    echo "usage: command-palette [<action>] "\""<list items>"\" >&2;
+    echo "  (-a |--action |--action=)<action>   <action>" >&2;
+    echo "  (-f |--filter |--filter=)<filter>   Prefill the filter" >&2;
+    echo "  -h|--help                           Show this help" >&2;
+    echo "  -k|--keep-open                      Keep command-palette open after running <action>" >&2;
+    echo "  (-t |--title |--title=)<title>      Add an optional title" >&2;
     exit 1;
 };
 
-for arg in "$@"; do
+i=1;
+
+while [[ $i -le $# ]]; do
+    arg=${!i};
+
     if [[ $arg = -* ]]; then
         case $arg in
-            -k)
-                keepOpen=1;
+            -a|--action*)
+                if [[ $arg = *=* ]]; then
+                    action=(${arg:9});
+                else
+                    i=$((i+1));
+                    action=(${!i});
+                fi
+                ;;
+            -f|--filter*)
+                if [[ $arg = *=* ]]; then
+                    filter="${arg:9}";
+                else
+                    i=$((i+1));
+                    filter=${!i};
+                fi
                 ;;
             -h|--help)
                 usage;
                 exit;
+                ;;
+            -k|--keep-open)
+                keepOpen=1;
+                ;;
+            -t|--title*)
+                if [[ $arg = *=* ]]; then
+                    title="${arg:8}";
+                else
+                    i=$((i+1));
+                    title=${!i};
+                fi
                 ;;
             *)
                 args+=("$arg");
@@ -44,12 +78,18 @@ for arg in "$@"; do
     else
         args+=("$arg");
     fi
+
+    i=$((i+1));
 done
 
 # if we have multiple arguments, assume that the first is the action
-if [[ "${#args[@]}" -gt 1 ]]; then
-    action=(${args[0]}); # use an array to support commands with spaces like 'git checkout'
-    unset args[0];
+if [[ -z $action ]]; then
+    if [[ "${#args[@]}" -gt 1 ]]; then
+        action=(${args[0]}); # use an array to support commands with spaces like 'git checkout'
+        unset args[0];
+    else
+        action="echo";
+    fi
 fi
 
 # vars
@@ -57,15 +97,13 @@ escape="";
 modifier="";
 isPageKey="";
 isHomeEnd="";
-filter="";
 data=();
+filteredData=();
+index=0;
 
 for arg in "${args[@]}"; do
     IFS=$'\n' data+=($arg);
 done
-
-filteredData=("${data[@]}");
-index=0;
 
 function _filterData {
     filterGlob="";
@@ -96,11 +134,54 @@ function _filterData {
 };
 
 function _updateDisplay {
+    tput civis;
     cols=$(tput cols);
     lines=$(tput lines);
 
+    tput cup 0 0;
+
+    if [[ -n $title ]]; then
+        tput bold;  # <b>
+        tput smul;  # <u>
+        echo "$title";
+        tput rmul;  # </u>
+        tput dim;   # </b>
+    fi
+
+    if [[ $filter != $oldFilter ]] || [[ -n $1 ]]; then
+        _updateDisplayFilter;
+
+        oldFilter="$filter";
+    else
+        tput cud1;  # move cursor down a line
+    fi
+
+    if [[ $previousCount != "${#filteredData[@]}" ]] || [[ $oldIndex != $index ]] || [[ -n $2 ]]; then
+        _updateDisplayList;
+
+        previousCount="${#filteredData[@]}";
+        oldIndex=$index;
+    fi
+};
+
+function _updateDisplayFilter {
+    echo "${searchPrefix}${filter}${searchSuffix}";
+};
+
+function _updateDisplayList {
+    # TODO: update less of the screen
+    #   work out what needs to be updated, and only clear the screen and update
+    #   everything if really necessary
+    tput cd;
+
     dataToRender=(${filteredData[@]});
-    maxLines=$((lines-3));
+    lineAdjuster=2;
+
+    if [[ -n $title ]]; then
+        lineAdjuster=3;
+    fi
+
+    maxLines=$((lines-lineAdjuster));
 
     if [[ "${#dataToRender[@]}" -gt $maxLines ]]; then
         startIndex=$((index-(maxLines/2)-1));
@@ -123,11 +204,6 @@ function _updateDisplay {
             i=$((i+1));
         done
     fi
-
-    tput clear;
-    tput cup 0 0;
-
-    echo "${searchPrefix}${filter}${searchSuffix}";
 
     for i in "${!dataToRender[@]}"; do 
         displayLine="${filteredData[$i]}";
@@ -178,7 +254,8 @@ tput smcup;
 tput civis;
 trap cleanup EXIT;
 
-_updateDisplay;
+_filterData;
+_updateDisplay 1 1;
 
 while read -s -n1 key; do
     # TODO
