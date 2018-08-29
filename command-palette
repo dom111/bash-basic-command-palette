@@ -172,7 +172,7 @@ function _updateDisplayList {
     # TODO: update less of the screen
     #   work out what needs to be updated, and only clear the screen and update
     #   everything if really necessary
-    tput cd;
+    tput ed;
 
     dataToRender=(${filteredData[@]});
     lineAdjuster=2;
