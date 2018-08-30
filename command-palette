@@ -1,26 +1,37 @@
 #!/usr/bin/env bash
 
-# TODO: add config file for these
 # styles
-normal=$(tput sgr0);    # wraps unselected options
-selected=$(tput rev);   #   "   selected     "
+styleReset="$(tput sgr0 2>/dev/null || tput me 2>/dev/null)";
+styleListItemStart="$styleReset";           # unselected list item start
+styleListItemEnd="$styleReset";             #     "       "    "   end
+styleListItemSelectedStart="$(tput rev 2>/dev/null)";   # selected    "    "   start
+styleListItemSelectedEnd="$styleReset";     #    "        "    "   end
+styleTitleStart="$(tput bold 2>/dev/null || tput md 2>/dev/null)$(tput smul 2>/dev/null || tput us 2>/dev/null)";    # title style start
+styleTitleEnd="$styleReset";                # title style end
 
 # templates
-prefix="   ";           # shown before unselected options
-suffix="   ";           #   "   after      "        "
-prefixSelected=" * ";   #   "   before selected     "
-suffixSelected="   ";   #   "   after      "        "
-searchPrefix=" | ";     #   "   before the filter
-searchSuffix="   ";     #   "   after   "    "
-truncateEllipsis="..."; #   "     "   truncated text
+listItemPrefix="   ";           # shown before unselected options
+listItemSuffix="   ";           #   "   after      "        "
+listItemPrefixSelected=" * ";   #   "   before selected     "
+listItemSuffixSelected="   ";   #   "   after      "        "
+listItemEllipsis="...";         #   "     "   truncated text
+titlePrefix="";                 #   "   before the title
+titleSuffix="";                 #   "   after   "    "
+searchPrefix=" | ";             #   "   before the filter
+searchSuffix="";                #   "   after   "    "
 # 
 
-# args
-title="";               # opional title shown on the first line
-keepOpen=0;             # close the list when $action is called
-action="";              # action to run when enter is pressed on list
-filter="";
-args=();
+# load config
+if [[ -f $HOME/.command-palette.conf ]]; then
+    source $HOME/.command-palette.conf;
+fi
+
+# per invocation options
+title="";   # opional title shown on the first line
+keepOpen=0; # close the list when $action is called
+action="";  # action to run when enter is pressed on list
+filter="";  # optionally prefilled filter
+args=();    # list items
 # 
 
 function usage {
@@ -134,54 +145,51 @@ function _filterData {
 };
 
 function _updateDisplay {
-    tput civis;
     cols=$(tput cols);
     lines=$(tput lines);
 
-    tput cup 0 0;
+    echo -n "$(tput civis 2>/dev/null || tput vi 2>/dev/null)";
+
+    tput cup 0 0 2>/dev/null;
 
     if [[ -n $title ]]; then
-        tput bold;  # <b>
-        tput smul;  # <u>
-        echo "$title";
-        tput rmul;  # </u>
-        tput dim;   # </b>
+        echo "${titlePrefix}${styleTitleStart}${title}${titleSuffix}${styleTitleEnd}";
     fi
 
-    if [[ $filter != $oldFilter ]] || [[ -n $1 ]]; then
-        _updateDisplayFilter;
-
-        oldFilter="$filter";
-    else
-        tput cud1;  # move cursor down a line
-    fi
+    _displayFilter;
 
     if [[ $previousCount != "${#filteredData[@]}" ]] || [[ $oldIndex != $index ]] || [[ -n $2 ]]; then
-        _updateDisplayList;
+        _displayList;
 
         previousCount="${#filteredData[@]}";
         oldIndex=$index;
     fi
 };
 
-function _updateDisplayFilter {
-    echo "${searchPrefix}${filter}${searchSuffix}";
+function _displayFilter {
+    echo "$(tput el 2>/dev/null || tput ce 2>/dev/null)${searchPrefix}${filter}${searchSuffix}";
 };
 
-function _updateDisplayList {
+# from: https://stackoverflow.com/a/51930257/3145856
+function _getCurrentPosition { 
+    local pos=() originalState=$(stty -g);
+    stty -echo;
+    tput u7 2>/dev/null || echo -en "\033[6n";
+    IFS='[;' read -rd R -a pos;
+    stty $originalState;
+    currentRow=${pos[1]};
+    currentColumn=${pos[2]};
+};
+
+function _displayList {
     # TODO: update less of the screen
     #   work out what needs to be updated, and only clear the screen and update
     #   everything if really necessary
-    tput ed;
+    echo -n "$(tput ed 2>/dev/null || tput cd 2>/dev/null)";
 
+    _getCurrentPosition;
+    maxLines=$((lines-currentRow));
     dataToRender=(${filteredData[@]});
-    lineAdjuster=2;
-
-    if [[ -n $title ]]; then
-        lineAdjuster=3;
-    fi
-
-    maxLines=$((lines-lineAdjuster));
 
     if [[ "${#dataToRender[@]}" -gt $maxLines ]]; then
         startIndex=$((index-(maxLines/2)-1));
@@ -210,19 +218,19 @@ function _updateDisplayList {
         maxLength=$cols;
 
         if [[ $i = $index ]]; then
-            maxLength=$((maxLength-${#prefixSelected}-${#suffixSelected}-${#truncateEllipsis}));
+            maxLength=$((maxLength-${#listItemPrefixSelected}-${#listItemSuffixSelected}-${#listItemEllipsis}));
         else
-            maxLength=$((maxLength-${#prefix}-${#suffix}-${#truncateEllipsis}));
+            maxLength=$((maxLength-${#listItemPrefix}-${#listItemSuffix}-${#listItemEllipsis}));
         fi
 
         if [[ ${#displayLine} -gt $maxLength ]]; then
-            displayLine="${displayLine:0:$maxLength}${truncateEllipsis}";
+            displayLine="${displayLine:0:$maxLength}${listItemEllipsis}";
         fi
 
         if [[ $i = $index ]]; then
-            echo "${selected}${prefixSelected}${displayLine}${suffixSelected}${normal}";
+            echo "${styleListItemSelectedStart}${listItemPrefixSelected}${displayLine}${listItemSuffixSelected}${styleListItemSelectedEnd}";
         else
-            echo "${normal}${prefix}${displayLine}${suffix}${normal}";
+            echo "${styleListItemStart}${listItemPrefix}${displayLine}${listItemSuffix}${styleListItemEnd}";
         fi
     done
 };
@@ -235,23 +243,23 @@ function _setModifiers {
 };
 
 function cleanup {
-    tput rmcup;
-    tput cnorm;
+    echo -n "$(tput rmcup 2>/dev/null || tput te 2>/dev/null)";
+    echo -n "$(tput cnorm 2>/dev/null || tput ve 2>/dev/null)";
 };
 
 function _updateFilter {
     if [[ $1 = $'\177' ]]; then
         filter="${filter%?}";
     else
-        filter="$filter$1";
+        filter="${filter}$1";
     fi
 
     _filterData;
 };
 
 # main
-tput smcup;
-tput civis;
+echo -n "$(tput smcup 2>/dev/null || tput ti 2>/dev/null)";
+echo -n "$(tput civis 2>/dev/null || tput vi 2>/dev/null)";
 trap cleanup EXIT;
 
 _filterData;

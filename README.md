@@ -39,9 +39,35 @@ produces:
 
 The default `<action>` is to call `echo`.
 
+## Config file
+
+After setting up the defaults, the script looks for ~/.command-palette.conf, if it exists it would be `source`d allowing the config file to directly overwrite the variables defined before it's included. This includes:
+
+ - `styleReset` - This would probably be bad to overwrite, but this defines the sequence for resetting the terminal after adding styling.
+ - `styleListItemStart` - This is prepended to `listItemPrefix` to enable styling. These exist as separate variables so that their length isn't counted when calculating what will and won't fit on screen.
+ - `styleListItemEnd` - This is appended to `listItemSuffix`.
+ - `styleListItemSelectedStart` - This is prepended to `listItemPrefixSelected`.
+ - `styleListItemSelectedEnd` - This is appended to `listItemSuffixSelected`.
+ - `styleTitleStart` - This is prepended to the title.
+ - `styleTitleEnd` - This is appended to the title.
+
+ - `listItemPrefix` - This is prepended to the list item. Default: `   `.
+ - `listItemSuffix` - This is appended to the list item. Default: `   `.
+ - `listItemPrefixSelected` - This is prepended to the selected list item. Default: ` * `.
+ - `listItemSuffixSelected` - This is appended to the selected list item. Default: `   `.
+ - `listItemEllipsis` - This is appended to any truncated list items. Default: `...`.
+ - `titlePrefix` - This is prepended to `titlePrefix`. Default: ``;
+ - `titleSuffix` - This is appended to `titlePrefix`. Default: ``;
+ - `searchPrefix` - This is prepended to the search filter. Default: ` | `.
+ - `searchSuffix` - This is appended to the search filter. Default: ``.
+
 ## Command-line Options
 
-- `-k` - *k*eeps the command palette open after executing `<action>`.
+- `(-a |--action |--action=)<action>` - Explicitly sets the *a*ction when selecting a menu item.
+- `(-f |--filter |--filter=)<filter>` - Prefill the filter.
+- `-h|--help` - Show help.
+- `-k|--keep-open` - Keep command-palette open after running `action`
+- `(-t |--title |--title=)<title>` - Add an optional title.
 
 ## Keyboard Shortcuts
 
@@ -52,8 +78,8 @@ When in the command-palette interface, <kbd>Esc</kbd> <kbd>BkSp</kbd> will clear
 - [x] Default action
 - [x] Option to prefill the filter
 - [x] Add an optional title
+- [x] Add a config file
 - [ ] Sorting
-- [ ] Add a config file
 - [ ] Add left/right support for long lines
 - [ ] Intelligent screen repainting
 - [ ] Multi-select
