@@ -56,10 +56,10 @@ After setting up the defaults, the script looks for ~/.command-palette.conf, if 
  - `listItemPrefixSelected` - This is prepended to the selected list item. Default: ` * `.
  - `listItemSuffixSelected` - This is appended to the selected list item. Default: `   `.
  - `listItemEllipsis` - This is appended to any truncated list items. Default: `...`.
- - `titlePrefix` - This is prepended to `titlePrefix`. Default: ``;
- - `titleSuffix` - This is appended to `titlePrefix`. Default: ``;
+ - `titlePrefix` - This is prepended to `titlePrefix`. Default: `<empty>`;
+ - `titleSuffix` - This is appended to `titlePrefix`. Default: `<empty>`;
  - `searchPrefix` - This is prepended to the search filter. Default: ` | `.
- - `searchSuffix` - This is appended to the search filter. Default: ``.
+ - `searchSuffix` - This is appended to the search filter. Default: `<empty>`.
 
 ## Command-line Options
 
@@ -72,6 +72,10 @@ After setting up the defaults, the script looks for ~/.command-palette.conf, if 
 ## Keyboard Shortcuts
 
 When in the command-palette interface, <kbd>Esc</kbd> <kbd>BkSp</kbd> will clear the filter, and you can use <kbd>Esc</kbd> <kbd>Esc</kbd> to quit without executing `<action>`. When navigating the list, the <kbd>↑</kbd> and <kbd>↓</kbd> arrows move up and down the list, <kbd>PgUp</kbd> and <kbd>PgDn</kbd> move up or down half a screen of items, and <kbd>Home</kbd> and <kbd>End</kbd> move to the beginning and end of the list respectively.
+
+## Writeup
+
+I've created [a blog post about my motivation for building this and the steps to build the basic version](https://dom.hastin.gs/blog/coding/building-a-basic-command-palette-for-bash/607) for anyone interested in making something similar. Hopefully it'll be helpful to someone!
 
 ## TODO
 
